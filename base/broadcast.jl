@@ -213,7 +213,6 @@ This should only be specialized for objects that do not define [`axes`](@ref) bu
 @inline Base.axes(bc::Broadcasted) = _axes(bc, bc.axes)
 _axes(::Broadcasted, axes::Tuple) = axes
 @inline _axes(bc::Broadcasted, ::Nothing)  = combine_axes(bc.args...)
-#_axes(bc::Broadcasted{Style{Tuple}}, ::Nothing) = (Base.OneTo(longest_tuple_len(bc)),)
 _axes(bc::Broadcasted{<:AbstractArrayStyle{0}}, ::Nothing) = ()
 
 BroadcastStyle(::Type{<:Broadcasted{Style}}) where {Style} = Style()
@@ -931,22 +930,8 @@ end
 @inline function copy(bc::Broadcasted{Style{Tuple}})
     args = bc.args
     N = Val(prod(length, broadcast_axes(bc)))
-    #N = Val(longest_tuple_len(bc))
     return ntuple(k -> @inbounds(_broadcast_getindex(bc.args, k)), N)
 end
-## reimplement combine_axes for Tuple in a way that ensure we can infer length
-## find the longest tuple within the list of arguments
-## Start with nothing as a placeholder and go until we find the first tuple in the argument list
-#longest_tuple_len(t1::Tuple, tail...) = _bcs1_tuple(length(t1), longest_tuple_len(tail...))
-## Or recurse through nested broadcast expressions
-#longest_tuple_len(t1::Broadcasted, tail...) = _bcs1_tuple(longest_tuple_len(t[1].args...), longest_tuple_len(tail...))
-#longest_tuple_len(t1::Tuple) = length(t1)
-#longest_tuple_len(t1::Broadcasted) = longest_tuple_len(t1.args...)
-#longest_tuple_len() = 1
-## Support only 1-tuples and N-tuples where there are no conflicts in N
-#_bcs1_tuple(a::Integer, b::Integer) =
-#    a == 1 ? b : (b == 1 ? a : (a == b ? a :
-#        throw(DimensionMismatch("tuples of length $A and $B could not be broadcast to a common size"))))
 
 ## scalar-range broadcast operations ##
 # DefaultArrayStyle and \ are not available at the time of range.jl
